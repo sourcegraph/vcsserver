@@ -91,10 +91,6 @@ func (m Mapping) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Pass the rest of this Git transaction to the file server.
-	//	http.StripPrefix(filepath.Join("/"+m.Host, repo),
-	//	http.FileServer(http.Dir(dir))).ServeHTTP(w, r)
-
 	backend := &cgi.Handler{
 		Path: GitHTTPBackend,
 		Dir:  dir,
