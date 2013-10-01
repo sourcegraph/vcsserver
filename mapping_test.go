@@ -33,8 +33,8 @@ func TestMapping(t *testing.T) {
 		{
 			mappings:        map[string]Mapping{"/github.com/": {"github.com", git, regexp.MustCompile("^/([^/]+)/([^/])+"), "git"}},
 			vcs:             git,
-			cloneURLPath:    "/github.com/sourcegraph/nodejs-sample.git",
-			ensureFileLocal: "package.json",
+			cloneURLPath:    "/github.com/sqs/vcsserver-gittest.git",
+			ensureFileLocal: "foo",
 		},
 		{
 			mappings:        map[string]Mapping{"/bitbucket.org/": {"bitbucket.org", hg, regexp.MustCompile("^/([^/]+)/([^/])+"), "https"}},
