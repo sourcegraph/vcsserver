@@ -87,19 +87,36 @@ func (m Mapping) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Printf("cloning mirror in %s", dir)
+		record("clone", m.Host, repo)
 		err = m.VCS.CloneMirror(remoteURL, dir)
 		if err != nil {
 			log.Print(err)
 			http.Error(w, "error cloning mirror", http.StatusInternalServerError)
 			return
 		}
-	} else if r.Header.Get("pragma") == "no-cache" {
-		log.Printf("updating mirror in %s", dir)
-		err = m.VCS.UpdateMirror(dir)
-		if err != nil {
-			log.Print(err)
-			http.Error(w, "error updating mirror", http.StatusInternalServerError)
-			return
+	} else {
+		// If this is the first op in a transaction, then update the repo
+		// from the remote. (We don't want to try to update it for each op in a
+		// transaction.)
+		var update bool
+		if r.Header.Get("pragma") == "no-cache" {
+			// git clone/fetch/pull set `Pragma: no-cache` on its initial request.
+			update = true
+		}
+		if m.VCS == vcs.Hg && r.URL.Query().Get("cmd") == "capabilities" {
+			// hg clone/pull's initial request query string contains
+			// `cmd=capabilities`.
+			update = true
+		}
+		if update {
+			log.Printf("updating mirror in %s", dir)
+			record("update", m.Host, repo)
+			err = m.VCS.UpdateMirror(dir)
+			if err != nil {
+				log.Print(err)
+				http.Error(w, "error updating mirror", http.StatusInternalServerError)
+				return
+			}
 		}
 	}
 
@@ -154,3 +171,13 @@ func (m Mapping) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		backend.ServeHTTP(w, r)
 	}
 }
+
+// record records an action that occurred. It currently is only used for testing
+// (to ensure that specific actions occurred), but it could be used for tracking
+// statistics in the future.
+func record(action, host, repo string) {
+	log.Print(action + ":" + host + repo)
+	actions[action+":"+host+repo]++
+}
+
+var actions = make(map[string]uint)

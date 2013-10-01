@@ -79,6 +79,9 @@ func TestMapping(t *testing.T) {
 	}
 
 	for i, test := range tests {
+		if i != 1 {
+			continue
+		}
 		StorageDir = filepath.Join(tmpdir, strconv.Itoa(i))
 		err = os.MkdirAll(StorageDir, 0755)
 		if err != nil {
@@ -106,6 +109,9 @@ func testMapping(t *testing.T, test mappingTest) {
 }
 
 func testClone(t *testing.T, test cloneTest, serverURL string) {
+	actionkey := "clone:" + test.url[1:]
+	pre := actions[actionkey]
+
 	// Make a temp dir for the client to clone the repo into.
 	tmpdir, err := ioutil.TempDir("", "vcsserver-local")
 	if err != nil {
@@ -151,6 +157,30 @@ func testClone(t *testing.T, test cloneTest, serverURL string) {
 	}
 	if !ok {
 		t.Errorf("no storedRepoDir contains a cloned repo (did the repo get cloned by the mapping handler?)")
+	}
+
+	testUpdate(t, test, serverURL, localRepoDir)
+
+	if post := actions[actionkey]; post != pre+1 {
+		t.Errorf("want 1 %s to have occurred during clone, got %d", actionkey, post-pre)
+	}
+}
+
+func testUpdate(t *testing.T, test cloneTest, serverURL string, repodir string) {
+	actionkey := "update:" + test.url[1:]
+	pre := actions[actionkey]
+
+	repo, err := test.vcs.Open(repodir)
+	if err != nil {
+		t.Fatal("Open failed:", err)
+	}
+	err = repo.Download()
+	if err != nil {
+		t.Fatal("Download failed:", err)
+	}
+
+	if post := actions[actionkey]; post != pre+1 {
+		t.Errorf("want 1 %s to have occurred during clone, got %d", actionkey, post-pre)
 	}
 }
 
