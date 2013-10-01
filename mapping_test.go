@@ -56,7 +56,7 @@ func TestMapping(t *testing.T) {
 				{url: "/github.com/sqs/vcsserver-gittest/v/quxbranch/qux", data: "Hello, qux"},
 				{url: "/github.com/sqs/vcsserver-gittest/v/quxbranch/foo", data: "Hello, foo!!!"},
 
-				// {url: "/github.com/sqs/vcsserver-gittest/v/doesntexist/foo", statusCode: http.StatusNotFound},
+				{url: "/github.com/sqs/vcsserver-gittest/v/doesntexist/foo", statusCode: http.StatusNotFound},
 			},
 		},
 		{
@@ -73,7 +73,7 @@ func TestMapping(t *testing.T) {
 				{url: "/bitbucket.org/sqs/go-vcs-hgtest/v/barbranch/bar", data: "Hello, bar"},
 				{url: "/bitbucket.org/sqs/go-vcs-hgtest/v/barbranch/foo", data: "Hello, foo"},
 
-				// {url: "/bitbucket.org/sqs/go-vcs-hgtest/v/doesntexist/foo", statusCode: http.StatusNotFound},
+				{url: "/bitbucket.org/sqs/go-vcs-hgtest/v/doesntexist/foo", statusCode: http.StatusNotFound},
 			},
 		},
 	}
