@@ -86,7 +86,6 @@ func (m Mapping) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Printf("cloning mirror in %s", dir)
 		record("clone", m.Host, repo)
 		err = m.VCS.CloneMirror(remoteURL, dir)
 		if err != nil {
@@ -109,7 +108,6 @@ func (m Mapping) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			update = true
 		}
 		if update {
-			log.Printf("updating mirror in %s", dir)
 			record("update", m.Host, repo)
 			err = m.VCS.UpdateMirror(dir)
 			if err != nil {
