@@ -14,9 +14,10 @@ import (
 )
 
 type mappingTest struct {
-	mappings     map[string]Mapping
-	vcs          vcs.VCS
-	cloneURLPath string
+	mappings        map[string]Mapping
+	vcs             vcs.VCS
+	cloneURLPath    string
+	ensureFileLocal string
 }
 
 func TestMapping(t *testing.T) {
@@ -26,13 +27,20 @@ func TestMapping(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpdir)
 
-	git := vcs.VCSByName["git"]
+	hg, git := vcs.VCSByName["hg"], vcs.VCSByName["git"]
 
 	tests := []mappingTest{
 		{
-			mappings:     map[string]Mapping{"/github.com/": {"github.com", git, regexp.MustCompile("^/([^/]+)/([^/])+"), "git"}},
-			vcs:          git,
-			cloneURLPath: "/github.com/sourcegraph/nodejs-sample.git",
+			mappings:        map[string]Mapping{"/github.com/": {"github.com", git, regexp.MustCompile("^/([^/]+)/([^/])+"), "git"}},
+			vcs:             git,
+			cloneURLPath:    "/github.com/sourcegraph/nodejs-sample.git",
+			ensureFileLocal: "package.json",
+		},
+		{
+			mappings:        map[string]Mapping{"/bitbucket.org/": {"bitbucket.org", hg, regexp.MustCompile("^/([^/]+)/([^/])+"), "https"}},
+			vcs:             hg,
+			cloneURLPath:    "/bitbucket.org/sqs/go-vcs-hgtest",
+			ensureFileLocal: "foo",
 		},
 	}
 
@@ -63,19 +71,40 @@ func testMapping(t *testing.T, test mappingTest) {
 	defer os.RemoveAll(tmpdir)
 
 	localRepoDir := filepath.Join(tmpdir, "repo")
-	_, err = test.vcs.Clone(s.URL+"/"+test.cloneURLPath, localRepoDir)
+	_, err = test.vcs.Clone(s.URL+test.cloneURLPath, localRepoDir)
 	if err != nil {
 		t.Fatal("Clone failed:", err)
 	}
 
-	if f := filepath.Join(localRepoDir, ".git/config"); !isFile(f) {
+	var f string
+	switch test.vcs {
+	case vcs.Git:
+		f = filepath.Join(localRepoDir, ".git/config")
+	case vcs.Hg:
+		f = filepath.Join(localRepoDir, ".hg/hgrc")
+	default:
+		t.Fatal("unhandled VCS type")
+	}
+	if !isFile(f) {
+		t.Errorf("want file %s to exist", f)
+	}
+
+	if f := filepath.Join(localRepoDir, test.ensureFileLocal); !isFile(f) {
 		t.Errorf("want file %s to exist", f)
 	}
 
 	var ok bool
 	for _, m := range test.mappings {
 		storedRepoDir := repoDir(m.Host, m.VCS, strings.TrimPrefix(test.cloneURLPath, "/"+m.Host+"/"))
-		f := filepath.Join(storedRepoDir, "config")
+		var f string
+		switch m.VCS {
+		case vcs.Git:
+			f = filepath.Join(storedRepoDir, "config")
+		case vcs.Hg:
+			f = filepath.Join(storedRepoDir, ".hg/hgrc")
+		default:
+			t.Fatal("unhandled VCS type")
+		}
 		if isFile(f) {
 			ok = true
 		}

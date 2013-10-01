@@ -16,6 +16,9 @@ import (
 // GitHTTPBackend is the path to the git-http-backend executable.
 var GitHTTPBackend string = "/usr/lib/git-core/git-http-backend"
 
+// Python27 is the path to Python 2.7.
+var Python27 string = "/usr/bin/python2.7"
+
 // Mapping represents a mapping from a request path on this server to an origin
 // VCS repository URL.
 type Mapping struct {
@@ -91,10 +94,26 @@ func (m Mapping) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	backend := &cgi.Handler{
-		Path: GitHTTPBackend,
-		Dir:  dir,
-		Env:  []string{"GIT_HTTP_EXPORT_ALL=", "GIT_PROJECT_ROOT=" + filepath.Join(StorageDir, m.VCS.ShortName())},
+	var backend *cgi.Handler
+	switch m.VCS {
+	case vcs.Git:
+		backend = &cgi.Handler{
+			Path: GitHTTPBackend,
+			Dir:  dir,
+			Env:  []string{"GIT_HTTP_EXPORT_ALL=", "GIT_PROJECT_ROOT=" + filepath.Join(StorageDir, m.VCS.ShortName())},
+		}
+	case vcs.Hg:
+		backend = &cgi.Handler{
+			Path: Python27,
+			Root: "/" + m.Host + repo,
+			Dir:  dir,
+			Env:  []string{"HG_REPO_DIR=" + dir},
+			// condensed hgweb.cgi script
+			Args: []string{"-c", "import os;from mercurial import demandimport;demandimport.enable();from mercurial.hgweb import hgweb,wsgicgi;application=hgweb(os.getenv('HG_REPO_DIR'));wsgicgi.launch(application)"},
+		}
+	default:
+		w.WriteHeader(http.StatusNoContent)
+		return
 	}
 	backend.ServeHTTP(w, r)
 }
