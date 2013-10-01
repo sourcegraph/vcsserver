@@ -14,10 +14,19 @@ import (
 )
 
 // GitHTTPBackend is the path to the git-http-backend executable.
-var GitHTTPBackend string = "/usr/lib/git-core/git-http-backend"
+var GitHTTPBackend = os.Getenv("GIT_HTTP_BACKEND")
 
 // Python27 is the path to Python 2.7.
-var Python27 string = "/usr/bin/python2.7"
+var Python27 = os.Getenv("PYTHON27")
+
+func init() {
+	if GitHTTPBackend == "" {
+		GitHTTPBackend = "/usr/lib/git-core/git-http-backend"
+	}
+	if Python27 == "" {
+		Python27 = "/usr/bin/python2.7"
+	}
+}
 
 // Mapping represents a mapping from a request path on this server to an origin
 // VCS repository URL.

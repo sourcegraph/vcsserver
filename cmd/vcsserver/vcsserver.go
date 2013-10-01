@@ -33,6 +33,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\tMercurial repos at https://bitbucket.org/user/repo:\n")
 		fmt.Fprintf(os.Stderr, "\t    $ vcsserver '/bitbucket.org/,bitbucket.org,^/([^/]+)/([^/])+,hg,https'\n\n")
 		fmt.Fprintln(os.Stderr)
+		fmt.Fprintf(os.Stderr, "vcsserver reads the following environment variables:\n\n")
+		fmt.Fprintf(os.Stderr, "\tGIT_HTTP_BACKEND   path to the `git-http-backend` executable\n")
+		fmt.Fprintf(os.Stderr, "\tPYTHON27           path to the Python 2.7 interpreter\n")
+		fmt.Fprintln(os.Stderr)
 		os.Exit(1)
 	}
 	flag.Parse()
