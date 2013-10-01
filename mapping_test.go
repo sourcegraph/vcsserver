@@ -40,7 +40,7 @@ func TestMapping(t *testing.T) {
 		StorageDir = filepath.Join(tmpdir, strconv.Itoa(i))
 		err = os.MkdirAll(StorageDir, 0755)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatal("MkdirAll failed:", err)
 		}
 
 		testMapping(t, test)
@@ -58,14 +58,14 @@ func testMapping(t *testing.T, test mappingTest) {
 	// Make a temp dir for the client to clone the repo into.
 	tmpdir, err := ioutil.TempDir("", "vcsserver-local")
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("TempDir failed:", err)
 	}
 	defer os.RemoveAll(tmpdir)
 
 	localRepoDir := filepath.Join(tmpdir, "repo")
 	_, err = test.vcs.Clone(s.URL+"/"+test.cloneURLPath, localRepoDir)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("Clone failed:", err)
 	}
 
 	if f := filepath.Join(localRepoDir, ".git/config"); !isFile(f) {
