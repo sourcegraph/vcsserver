@@ -24,7 +24,7 @@ func TestMapping(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//defer os.RemoveAll(tmpdir)
+	defer os.RemoveAll(tmpdir)
 
 	git := vcs.VCSByName["git"]
 
