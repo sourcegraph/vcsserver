@@ -94,26 +94,54 @@ func (m Mapping) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var backend *cgi.Handler
-	switch m.VCS {
-	case vcs.Git:
-		backend = &cgi.Handler{
-			Path: GitHTTPBackend,
-			Dir:  dir,
-			Env:  []string{"GIT_HTTP_EXPORT_ALL=", "GIT_PROJECT_ROOT=" + filepath.Join(StorageDir, m.VCS.ShortName())},
+	extrapath := strings.TrimPrefix(r.URL.Path, "/"+m.Host+repo)
+	if strings.HasPrefix(extrapath, "/v/") {
+		extrapath = strings.TrimPrefix(extrapath, "/v/")
+		parts := strings.SplitN(extrapath, "/", 2)
+		if len(parts) != 2 {
+			http.NotFoundHandler().ServeHTTP(w, r)
+			return
 		}
-	case vcs.Hg:
-		backend = &cgi.Handler{
-			Path: Python27,
-			Root: "/" + m.Host + repo,
-			Dir:  dir,
-			Env:  []string{"HG_REPO_DIR=" + dir},
-			// condensed hgweb.cgi script
-			Args: []string{"-c", "import os;from mercurial import demandimport;demandimport.enable();from mercurial.hgweb import hgweb,wsgicgi;application=hgweb(os.getenv('HG_REPO_DIR'));wsgicgi.launch(application)"},
+		rev, path := parts[0], parts[1]
+		v, err := m.VCS.Open(dir)
+		if err != nil {
+			log.Print(err)
+			http.Error(w, "failed to open repository", http.StatusInternalServerError)
+			return
 		}
-	default:
-		w.WriteHeader(http.StatusNoContent)
-		return
+
+		data, err := v.ReadFileAtRevision(path, rev)
+		if os.IsNotExist(err) {
+			http.NotFoundHandler().ServeHTTP(w, r)
+			return
+		} else if err != nil {
+			log.Print(err)
+			http.Error(w, "failed to read file at revision", http.StatusInternalServerError)
+			return
+		}
+		w.Write(data)
+	} else {
+		var backend *cgi.Handler
+		switch m.VCS {
+		case vcs.Git:
+			backend = &cgi.Handler{
+				Path: GitHTTPBackend,
+				Dir:  dir,
+				Env:  []string{"GIT_HTTP_EXPORT_ALL=", "GIT_PROJECT_ROOT=" + filepath.Join(StorageDir, m.VCS.ShortName())},
+			}
+		case vcs.Hg:
+			backend = &cgi.Handler{
+				Path: Python27,
+				Root: "/" + m.Host + repo,
+				Dir:  dir,
+				Env:  []string{"HG_REPO_DIR=" + dir},
+				// condensed hgweb.cgi script
+				Args: []string{"-c", "import os;from mercurial import demandimport;demandimport.enable();from mercurial.hgweb import hgweb,wsgicgi;application=hgweb(os.getenv('HG_REPO_DIR'));wsgicgi.launch(application)"},
+			}
+		default:
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		backend.ServeHTTP(w, r)
 	}
-	backend.ServeHTTP(w, r)
 }

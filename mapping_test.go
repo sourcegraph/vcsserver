@@ -2,6 +2,7 @@ package vcsserver
 
 import (
 	"github.com/sourcegraph/go-vcs"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -9,18 +10,26 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 )
 
 type mappingTest struct {
 	mappings map[string]Mapping
 	clones   []cloneTest
+	getFiles []getFileTest
 }
 
 type cloneTest struct {
 	vcs                   vcs.VCS
 	url                   string
 	ensureLocalFileExists string
+}
+
+type getFileTest struct {
+	url        string
+	statusCode int
+	data       string
 }
 
 func TestMapping(t *testing.T) {
@@ -40,6 +49,15 @@ func TestMapping(t *testing.T) {
 				url: "/github.com/sqs/vcsserver-gittest.git",
 				ensureLocalFileExists: "foo",
 			}},
+			getFiles: []getFileTest{
+				{url: "/github.com/sqs/vcsserver-gittest/v/d3dd4c84e9e429e28e05d53a04651bce084f0565/foo", data: "Hello, foo"},
+				{url: "/github.com/sqs/vcsserver-gittest/v/master/foo", data: "Hello, foo!!!"},
+				{url: "/github.com/sqs/vcsserver-gittest/v/master/qux", statusCode: http.StatusNotFound},
+				{url: "/github.com/sqs/vcsserver-gittest/v/quxbranch/qux", data: "Hello, qux"},
+				{url: "/github.com/sqs/vcsserver-gittest/v/quxbranch/foo", data: "Hello, foo!!!"},
+
+				// {url: "/github.com/sqs/vcsserver-gittest/v/doesntexist/foo", statusCode: http.StatusNotFound},
+			},
 		},
 		{
 			mappings: map[string]Mapping{"/bitbucket.org/": {"bitbucket.org", hg, regexp.MustCompile("^/([^/]+)/([^/])+"), "https"}},
@@ -48,6 +66,15 @@ func TestMapping(t *testing.T) {
 				url: "/bitbucket.org/sqs/go-vcs-hgtest",
 				ensureLocalFileExists: "foo",
 			}},
+			getFiles: []getFileTest{
+				{url: "/bitbucket.org/sqs/go-vcs-hgtest/v/d047adf8d7ff0d3c589fe1d1cd72e1b8fb9512ea/foo", data: "Hello, foo"},
+				{url: "/bitbucket.org/sqs/go-vcs-hgtest/v/default/foo", data: "Hello, foo"},
+				{url: "/bitbucket.org/sqs/go-vcs-hgtest/v/default/bar", statusCode: http.StatusNotFound},
+				{url: "/bitbucket.org/sqs/go-vcs-hgtest/v/barbranch/bar", data: "Hello, bar"},
+				{url: "/bitbucket.org/sqs/go-vcs-hgtest/v/barbranch/foo", data: "Hello, foo"},
+
+				// {url: "/bitbucket.org/sqs/go-vcs-hgtest/v/doesntexist/foo", statusCode: http.StatusNotFound},
+			},
 		},
 	}
 
@@ -71,6 +98,10 @@ func testMapping(t *testing.T, test mappingTest) {
 
 	for _, clone := range test.clones {
 		testClone(t, clone, s.URL)
+	}
+
+	for _, getFile := range test.getFiles {
+		testGetFile(t, getFile, s.URL)
 	}
 }
 
@@ -123,8 +154,42 @@ func testClone(t *testing.T, test cloneTest, serverURL string) {
 	}
 }
 
+func testGetFile(t *testing.T, test getFileTest, serverURL string) {
+	if test.statusCode == 0 {
+		test.statusCode = http.StatusOK
+	}
+
+	data, statusCode := httpGET(t, serverURL+test.url)
+	data = strings.TrimSpace(data)
+	if statusCode != test.statusCode {
+		t.Errorf("%s: want statusCode == %d, got %d", test.url, test.statusCode, statusCode)
+	}
+	return
+
+	if data != test.data {
+		t.Errorf("%s: want data == %q, got %q", test.url, test.data, data)
+	}
+}
+
 // isFile returns true if path is an existing directory, and false otherwise.
 func isFile(path string) bool {
 	fi, err := os.Stat(path)
 	return err == nil && fi.Mode().IsRegular()
+}
+
+func httpGET(t *testing.T, url string) (data string, status int) {
+	resp, err := http.Get(url)
+	if err != nil {
+		t.Fatalf("httpGET %s: %s", url, err)
+	}
+	defer resp.Body.Close()
+	return string(readAll(t, resp.Body)), resp.StatusCode
+}
+
+func readAll(t *testing.T, rdr io.Reader) []byte {
+	data, err := ioutil.ReadAll(rdr)
+	if err != nil {
+		t.Fatal("ReadAll", err)
+	}
+	return data
 }
