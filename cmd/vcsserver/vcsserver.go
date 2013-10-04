@@ -14,7 +14,7 @@ import (
 )
 
 var bindAddr = flag.String("http", ":8080", "HTTP bind address")
-var storageRoot = flag.String("storage", "/tmp/vcsserver", "storage root dir for VCS repos")
+var storageDir = flag.String("storage", "/tmp/vcsserver", "storage root dir for VCS repos")
 
 func main() {
 	flag.Usage = func() {
@@ -49,6 +49,8 @@ func main() {
 
 	log.SetPrefix("")
 	log.SetFlags(0)
+
+	vcsserver.StorageDir = *storageDir
 
 	for _, fieldstr := range flag.Args() {
 		fields := strings.Split(fieldstr, ",")
