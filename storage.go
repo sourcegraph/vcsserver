@@ -5,8 +5,9 @@ import (
 	"path/filepath"
 )
 
-var StorageDir string = "/tmp/vcsserver"
+// StorageDir is the root directory underneath which repositories are stored.
+var StorageDir = "/tmp/vcsserver"
 
-func repoDir(host string, VCS vcs.VCS, path string) string {
-	return filepath.Join(StorageDir, VCS.ShortName(), host, path)
+func repoDir(vcs vcs.VCS, uri string) string {
+	return filepath.Join(StorageDir, vcs.ShortName(), uri)
 }
