@@ -24,7 +24,48 @@ func init() {
 	}
 }
 
-func cloneOrUpdate(vcs vcs.VCS, dir string, cloneURL string, forceUpdate bool) *httpError {
+func (h *Handler) startCloneOrUpdate(dir string) (c chan *httpError, shouldWait bool) {
+	h.currentlyUpdatingLock.Lock()
+	defer h.currentlyUpdatingLock.Unlock()
+	_, present := h.currentlyUpdating[dir]
+	if !present {
+		h.currentlyUpdating[dir] = make([]chan *httpError, 0)
+		return nil, false
+	}
+	c = make(chan *httpError, 0)
+	h.currentlyUpdating[dir] = append(h.currentlyUpdating[dir], c)
+	return c, true
+}
+
+func (h *Handler) endCloneOrUpdate(dir string, herr *httpError) {
+	h.currentlyUpdatingLock.Lock()
+	defer h.currentlyUpdatingLock.Unlock()
+	waiters := h.currentlyUpdating[dir]
+	for _, c := range waiters {
+		c <- herr
+	}
+	delete(h.currentlyUpdating, dir)
+}
+
+func (h *Handler) cloneOrUpdate(vcs vcs.VCS, dir string, cloneURL string, forceUpdate bool) (herr *httpError) {
+	c, shouldWait := h.startCloneOrUpdate(dir)
+	if shouldWait {
+		err := <-c
+		if err != nil {
+			err = &httpError{message: err.message, statusCode: err.statusCode}
+			err.message = "after waiting: " + err.message
+		}
+		return err
+	}
+
+	mu := h.ensureRepoMutex(dir)
+	mu.Lock()
+	defer mu.Unlock()
+
+	defer func() {
+		h.endCloneOrUpdate(dir, herr)
+	}()
+
 	// Find or create repo dir.
 	fi, err := os.Stat(dir)
 	if err != nil && !os.IsNotExist(err) {

@@ -12,7 +12,7 @@ import (
 )
 
 type fileTestGroup struct {
-	handler Handler
+	handler *Handler
 	files   []fileTest
 }
 
@@ -31,7 +31,7 @@ func TestFileHandler(t *testing.T) {
 
 	tests := []fileTestGroup{
 		{
-			handler: Handler{[]string{"github.com"}},
+			handler: New([]string{"github.com"}),
 			files: []fileTest{
 				{url: "/2/git/git/github.com/sqs/vcsserver-gittest/v/d3dd4c84e9e429e28e05d53a04651bce084f0565/foo", data: "Hello, foo"},
 				{url: "/2/git/git/github.com/sqs/vcsserver-gittest/v/master/foo", data: "Hello, foo!!!"},
@@ -43,7 +43,7 @@ func TestFileHandler(t *testing.T) {
 			},
 		},
 		{
-			handler: Handler{[]string{"bitbucket.org"}},
+			handler: New([]string{"bitbucket.org"}),
 			files: []fileTest{
 				{url: "/2/hg/https/bitbucket.org/sqs/go-vcs-hgtest/v/d047adf8d7ff0d3c589fe1d1cd72e1b8fb9512ea/foo", data: "Hello, foo"},
 				{url: "/2/hg/https/bitbucket.org/sqs/go-vcs-hgtest/v/default/foo", data: "Hello, foo"},
@@ -68,7 +68,7 @@ func TestFileHandler(t *testing.T) {
 
 func groupTestFile(t *testing.T, test fileTestGroup) {
 	mux := http.NewServeMux()
-	mux.Handle("/", &test.handler)
+	mux.Handle("/", test.handler)
 	s := httptest.NewServer(mux)
 	defer s.Close()
 

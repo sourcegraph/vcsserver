@@ -48,7 +48,7 @@ func main() {
 	vcsserver.StorageDir = *storageDir
 
 	cloneHosts := flag.Args()
-	http.Handle("/", &vcsserver.Handler{cloneHosts})
+	http.Handle("/", vcsserver.New(cloneHosts))
 
 	fmt.Fprintf(os.Stderr, "starting server on %s\n", *bindAddr)
 	err := http.ListenAndServe(*bindAddr, nil)

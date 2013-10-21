@@ -13,7 +13,7 @@ import (
 )
 
 type proxyTestGroup struct {
-	handler Handler
+	handler *Handler
 	proxies []proxyTest
 }
 
@@ -36,7 +36,7 @@ func TestProxy(t *testing.T) {
 
 	testGroups := []proxyTestGroup{
 		{
-			handler: Handler{[]string{"github.com"}},
+			handler: New([]string{"github.com"}),
 			proxies: []proxyTest{{
 				vcs:                   git,
 				uri:                   "github.com/sqs/vcsserver-gittest.git",
@@ -45,7 +45,7 @@ func TestProxy(t *testing.T) {
 			}},
 		},
 		{
-			handler: Handler{[]string{"bitbucket.org"}},
+			handler: New([]string{"bitbucket.org"}),
 			proxies: []proxyTest{{
 				vcs:                   hg,
 				uri:                   "bitbucket.org/sqs/go-vcs-hgtest",
@@ -67,7 +67,7 @@ func TestProxy(t *testing.T) {
 
 func groupTestProxy(t *testing.T, test proxyTestGroup) {
 	mux := http.NewServeMux()
-	mux.Handle("/", &test.handler)
+	mux.Handle("/", test.handler)
 	s := httptest.NewServer(mux)
 	defer s.Close()
 

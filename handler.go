@@ -8,12 +8,27 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // Handler contains settings for vcsserver and implements http.Handler.
 type Handler struct {
 	// Hosts is a whitelist of hosts whose repositories may be accessed.
 	Hosts []string
+
+	currentlyUpdatingLock sync.Mutex
+	currentlyUpdating     map[string][]chan *httpError
+
+	repoAccessLock sync.Mutex
+	repoAccess     map[string]*sync.Mutex
+}
+
+func New(hosts []string) *Handler {
+	return &Handler{
+		Hosts:             hosts,
+		currentlyUpdating: make(map[string][]chan *httpError),
+		repoAccess:        make(map[string]*sync.Mutex),
+	}
 }
 
 // Router constructs a handler that provides cloning and file access.
@@ -40,11 +55,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Clone or update the requested repo.
 	dir := repoDir(route.vcs, route.uri)
-	err = cloneOrUpdate(route.vcs, dir, route.cloneURL, forceUpdate)
+	err = h.cloneOrUpdate(route.vcs, dir, route.cloneURL, forceUpdate)
 	if err != nil {
 		http.Error(w, err.message, err.statusCode)
 		return
 	}
+
+	mu := h.ensureRepoMutex(dir)
+	mu.Lock()
+	defer mu.Unlock()
 
 	switch route.action {
 	case proxyAction:
@@ -58,6 +77,16 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.message, err.statusCode)
 	}
+}
+
+func (h *Handler) ensureRepoMutex(dir string) *sync.Mutex {
+	h.repoAccessLock.Lock()
+	defer h.repoAccessLock.Unlock()
+	_, present := h.repoAccess[dir]
+	if !present {
+		h.repoAccess[dir] = new(sync.Mutex)
+	}
+	return h.repoAccess[dir]
 }
 
 type action string
