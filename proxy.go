@@ -1,10 +1,11 @@
 package vcsserver
 
 import (
+	"github.com/sourcegraph/go-cgi/cgi"
 	"github.com/sourcegraph/go-vcs"
 	"log"
 	"net/http"
-	"net/http/cgi"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 )
@@ -40,6 +41,22 @@ func proxy(w http.ResponseWriter, r *http.Request, route *route, dir string) *ht
 	default:
 		return &httpError{"unknown VCS type", http.StatusBadRequest}
 	}
-	backend.ServeHTTP(w, r)
+
+	// I don't know why, but having the CGI process write to a ResponseRecorder
+	// makes it die less often (never?). To test this, run:
+	//   go test -test.run=Concurrent -test.v
+	// until it fails. It shouldn't fail.
+	rw := httptest.NewRecorder()
+	backend.ServeHTTP(rw, r)
+	rw.Flush()
+
+	for k, vs := range rw.Header() {
+		for _, v := range vs {
+			w.Header().Add(k, v)
+		}
+	}
+	w.WriteHeader(rw.Code)
+	w.Write(rw.Body.Bytes())
+
 	return nil
 }
