@@ -1,11 +1,12 @@
 package vcsserver
 
 import (
+	"bufio"
 	"github.com/sourcegraph/go-cgi/cgi"
 	"github.com/sourcegraph/go-vcs"
 	"log"
+	"net"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 )
@@ -42,21 +43,49 @@ func proxy(w http.ResponseWriter, r *http.Request, route *route, dir string) *ht
 		return &httpError{"unknown VCS type", http.StatusBadRequest}
 	}
 
-	// I don't know why, but having the CGI process write to a ResponseRecorder
-	// makes it die less often (never?). To test this, run:
-	//   go test -test.run=Concurrent -test.v
-	// until it fails. It shouldn't fail.
-	rw := httptest.NewRecorder()
-	backend.ServeHTTP(rw, r)
-	rw.Flush()
-
-	for k, vs := range rw.Header() {
-		for _, v := range vs {
-			w.Header().Add(k, v)
-		}
+	rr := newRecorder(w)
+	backend.ServeHTTP(rr, r)
+	if rr.Code != http.StatusOK {
+		log.Printf("CGI: HTTP response code %d", rr.Code)
 	}
-	w.WriteHeader(rw.Code)
-	w.Write(rw.Body.Bytes())
 
 	return nil
+}
+
+// responseRecorder is an implementation of http.ResponseWriter that
+// records its HTTP status code and body length.
+type responseRecorder struct {
+	Code       int // the HTTP response code from WriteHeader
+	BodyLength int
+
+	underlying http.ResponseWriter
+}
+
+// newRecorder returns an initialized ResponseRecorder.
+func newRecorder(underlying http.ResponseWriter) *responseRecorder {
+	return &responseRecorder{underlying: underlying}
+}
+
+// Header returns the header map from the underlying ResponseWriter.
+func (rw *responseRecorder) Header() http.Header {
+	return rw.underlying.Header()
+}
+
+// Write always succeeds and writes to rw.Body, if not nil.
+func (rw *responseRecorder) Write(buf []byte) (int, error) {
+	rw.BodyLength += len(buf)
+	if rw.Code == 0 {
+		rw.Code = http.StatusOK
+	}
+	return rw.underlying.Write(buf)
+}
+
+// WriteHeader sets rw.Code.
+func (rw *responseRecorder) WriteHeader(code int) {
+	rw.Code = code
+	rw.underlying.WriteHeader(code)
+}
+
+func (rw *responseRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return rw.underlying.(http.Hijacker).Hijack()
 }
