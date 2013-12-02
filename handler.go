@@ -70,6 +70,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		err = proxy(w, r, route, dir)
 	case singleFileAction:
 		err = file(w, r, route.vcs, dir, route.extraPath)
+	case blameAction:
+		err = blameRepository(w, r, route.vcs, dir)
 	default:
 		panic("unknown action: " + string(route.action))
 	}
@@ -94,6 +96,7 @@ type action string
 const (
 	proxyAction      action = "proxy"
 	singleFileAction        = "singleFile"
+	blameAction             = "blame"
 )
 
 type httpError struct {
@@ -146,6 +149,8 @@ func router(hosts []string, path string) (*route, *httpError) {
 	var action action
 	if strings.HasPrefix(extraPath, "/v/") {
 		action = singleFileAction
+	} else if strings.HasPrefix(extraPath, "/api/blame") {
+		action = blameAction
 	} else {
 		action = proxyAction
 	}
