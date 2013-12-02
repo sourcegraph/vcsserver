@@ -58,8 +58,15 @@ func blameRepository(w http.ResponseWriter, r *http.Request, vcs_ vcs.VCS, dir s
 	return nil
 }
 
+var blameIgnores = []string{
+	"node_modules", "bower_components",
+	"doc", "docs", "build", "vendor",
+	".min.js", "-min.js", ".optimized.js", "-optimized.js",
+	"dist", "assets",
+}
+
 func doBlameRepository(dir, v string) ([]*Commit, []*Hunk, error) {
-	hunkMap, commitMap, err := blame.BlameRepository(dir, v)
+	hunkMap, commitMap, err := blame.BlameRepository(dir, v, blameIgnores)
 	if err != nil {
 		return nil, nil, err
 	}
