@@ -40,6 +40,15 @@ func TestBlameHandler(t *testing.T) {
 				{url: "/2/git/git/github.com/sqs/vcsserver-gittest/api/blame?v=doesntexist", statusCode: http.StatusInternalServerError}, // TODO(sqs): should be http.StatusNotFound
 			},
 		},
+		{
+			handler: New([]string{"bitbucket.org"}),
+			blames: []blameTest{
+				{url: "/2/hg/https/bitbucket.org/sqs/go-vcs-hgtest/api/blame?v=d047adf8d7ff0d3c589fe1d1cd72e1b8fb9512ea", numHunks: 1, numCommits: 1},
+				{url: "/2/hg/https/bitbucket.org/sqs/go-vcs-hgtest/api/blame?v=default", numHunks: 1, numCommits: 1},
+				{url: "/2/hg/https/bitbucket.org/sqs/go-vcs-hgtest/api/blame?v=barbranch", numHunks: 2, numCommits: 2},
+				{url: "/2/hg/https/bitbucket.org/sqs/go-vcs-hgtest/api/blame?v=doesntexist", statusCode: http.StatusInternalServerError}, // TODO(sqs): should be http.StatusNotFound
+			},
+		},
 	}
 
 	for i, test := range tests {

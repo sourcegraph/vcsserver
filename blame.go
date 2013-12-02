@@ -37,19 +37,16 @@ func blameRepository(w http.ResponseWriter, r *http.Request, vcs_ vcs.VCS, dir s
 	v := r.URL.Query().Get("v")
 
 	var data BlameResponse
-	switch vcs_ {
-	case vcs.Git:
-		commits, hunks, err := doBlameRepository(dir, v)
-		if err != nil {
-			log.Print(err)
-			return &httpError{"failed to blame repository", http.StatusInternalServerError}
-		}
-		data.Commits = commits
-		data.Hunks = hunks
+	commits, hunks, err := doBlameRepository(dir, v)
+	if err != nil {
+		log.Print(err)
+		return &httpError{"failed to blame repository", http.StatusInternalServerError}
 	}
+	data.Commits = commits
+	data.Hunks = hunks
 
 	w.Header().Add("content-type", "application/json; charset=utf-8")
-	err := json.NewEncoder(w).Encode(data)
+	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
 		log.Print(err)
 		// too late to return an HTTP error
