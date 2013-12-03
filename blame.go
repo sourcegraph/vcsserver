@@ -6,6 +6,7 @@ import (
 	"github.com/sourcegraph/go-vcs"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -31,6 +32,10 @@ type Hunk struct {
 type BlameResponse struct {
 	Commits []*Commit
 	Hunks   []*Hunk
+}
+
+func init() {
+	blame.Log = log.New(os.Stderr, "blame: ", log.LstdFlags)
 }
 
 func blameRepository(w http.ResponseWriter, r *http.Request, vcs_ vcs.VCS, dir string) *httpError {
