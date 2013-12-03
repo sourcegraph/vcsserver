@@ -64,7 +64,7 @@ var blameIgnores = []string{
 	"node_modules", "bower_components",
 	"doc", "docs", "build", "vendor",
 	".min.js", "-min.js", ".optimized.js", "-optimized.js",
-	"dist", "assets",
+	"dist", "assets", "deps/", "dep/",
 }
 
 func doBlameRepository(dir, v string) ([]*Commit, []*Hunk, error) {
