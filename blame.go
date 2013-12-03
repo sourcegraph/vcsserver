@@ -10,16 +10,12 @@ import (
 	"time"
 )
 
-type Author struct {
-	Email string
-	Name  string
-}
-
 type Commit struct {
-	CommitID   string
-	AuthorDate time.Time
-	Author     Author
-	Message    string
+	CommitID    string
+	AuthorDate  time.Time
+	AuthorName  string
+	AuthorEmail string
+	Message     string
 }
 
 type Hunk struct {
@@ -77,10 +73,11 @@ func doBlameRepository(dir, v string) ([]*Commit, []*Hunk, error) {
 	i := 0
 	for _, commit := range commitMap {
 		commits[i] = &Commit{
-			CommitID:   commit.ID,
-			AuthorDate: commit.AuthorDate,
-			Author:     Author{Name: commit.Author.Name, Email: commit.Author.Email},
-			Message:    commit.Message,
+			CommitID:    commit.ID,
+			AuthorDate:  commit.AuthorDate,
+			AuthorName:  commit.Author.Name,
+			AuthorEmail: commit.Author.Email,
+			Message:     commit.Message,
 		}
 		i++
 	}
