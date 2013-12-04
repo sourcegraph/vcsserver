@@ -30,7 +30,7 @@ type BlameResponse struct {
 	Hunks   []*Hunk
 }
 
-func init() {
+func enableBlameLog() {
 	blame.Log = log.New(os.Stderr, "blame: ", log.LstdFlags)
 }
 

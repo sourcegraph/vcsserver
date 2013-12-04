@@ -24,6 +24,7 @@ type Handler struct {
 }
 
 func New(hosts []string) *Handler {
+	enableBlameLog()
 	return &Handler{
 		Hosts:             hosts,
 		currentlyUpdating: make(map[string][]chan *httpError),
