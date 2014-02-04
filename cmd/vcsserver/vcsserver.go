@@ -11,6 +11,7 @@ import (
 
 var bindAddr = flag.String("http", ":8080", "HTTP bind address")
 var storageDir = flag.String("storage", "/tmp/vcsserver", "storage root dir for VCS repos")
+var offline = flag.Bool("offline", false, "don't try to access the network; use only stored data")
 
 func main() {
 	flag.Usage = func() {
@@ -46,6 +47,7 @@ func main() {
 	log.SetFlags(0)
 
 	vcsserver.StorageDir = *storageDir
+	vcsserver.Offline = *offline
 
 	cloneHosts := flag.Args()
 	http.Handle("/", vcsserver.New(cloneHosts))

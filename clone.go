@@ -48,6 +48,11 @@ func (h *Handler) endCloneOrUpdate(dir string, herr *httpError) {
 }
 
 func (h *Handler) cloneOrUpdate(vcs vcs.VCS, dir string, cloneURL string, forceUpdate bool) (herr *httpError) {
+	if Offline {
+		log.Printf("Skipping cloneOrUpdate of %s in offline mode", cloneURL)
+		return nil
+	}
+
 	c, shouldWait := h.startCloneOrUpdate(dir)
 	if shouldWait {
 		err := <-c

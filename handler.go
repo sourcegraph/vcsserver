@@ -11,6 +11,8 @@ import (
 	"sync"
 )
 
+var Offline bool
+
 // Handler contains settings for vcsserver and implements http.Handler.
 type Handler struct {
 	// Hosts is a whitelist of hosts whose repositories may be accessed.
