@@ -40,6 +40,7 @@ func batchFile(w http.ResponseWriter, r *http.Request, vcs vcs.VCS, dir string, 
 			log.Print(err)
 			return &httpError{"failed to read file at revision", http.StatusInternalServerError}
 		}
+		w.Header().Set("X-Batch-File", path)
 		w.Write(data)
 		return nil
 	}
