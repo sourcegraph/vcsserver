@@ -21,3 +21,14 @@ func ClonePath(vcs string, cloneURL *url.URL) string {
 func FilePath(vcs string, cloneURL *url.URL, revision, file string) string {
 	return ClonePath(vcs, cloneURL) + "/v/" + revision + "/" + file
 }
+
+// BatchFilesPath returns the HTTP request path on vcsserver that maps to a
+// batch request of the specified files at revision. Applications that use
+// vcsserver to proxy repositories should construct file URLs with the host URL
+// of vcsserver and the path returned by this function.
+func BatchFilesPath(vcs string, cloneURL *url.URL, revision string, files []string) string {
+	q := make(url.Values)
+	q.Set("return", returnFirstExist)
+	q["file"] = files
+	return ClonePath(vcs, cloneURL) + "/v-batch/" + revision + "?" + q.Encode()
+}
