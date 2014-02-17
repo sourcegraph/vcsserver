@@ -2,5 +2,5 @@
 
 ## Requirements
 
-* hglib (`pip install hglib`)
+* hglib (`pip install python-hglib`)
 
