@@ -32,7 +32,7 @@ func batchFile(w http.ResponseWriter, r *http.Request, vcs vcs.VCS, dir string, 
 	}
 
 	for _, path := range filepaths {
-		data, err := v.ReadFileAtRevision(path, rev)
+		data, _, err := v.ReadFileAtRevision(path, rev)
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue

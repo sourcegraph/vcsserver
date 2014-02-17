@@ -21,12 +21,15 @@ func file(w http.ResponseWriter, r *http.Request, vcs vcs.VCS, dir string, extra
 		return &httpError{"failed to open repository", http.StatusInternalServerError}
 	}
 
-	data, err := v.ReadFileAtRevision(path, rev)
+	data, filetype, err := v.ReadFileAtRevision(path, rev)
 	if os.IsNotExist(err) {
 		return &httpError{"not found", http.StatusNotFound}
 	} else if err != nil {
 		log.Print(err)
 		return &httpError{"failed to read file at revision", http.StatusInternalServerError}
+	}
+	if filetype == "Dir" {
+		w.Header().Set("Content-Type", "application/x-directory")
 	}
 	w.Write(data)
 	return nil

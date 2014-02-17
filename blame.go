@@ -46,7 +46,7 @@ func blameRepository(w http.ResponseWriter, r *http.Request, vcs_ vcs.VCS, dir s
 	data.Commits = commits
 	data.Hunks = hunks
 
-	w.Header().Add("content-type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
 		log.Print(err)
