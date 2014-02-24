@@ -22,7 +22,7 @@ func TestClonePath(t *testing.T) {
 			continue
 		}
 		clonePath := ClonePath(test.vcs, cloneURL)
-		if test.wantClonePath != clonePath {
+		if test.wantClonePath != clonePath.String() {
 			t.Errorf("%s: want clonePath %s, got %s", test.cloneURL, test.wantClonePath, clonePath)
 		}
 	}
@@ -47,7 +47,7 @@ func TestFilePath(t *testing.T) {
 			continue
 		}
 		filePath := FilePath(test.vcs, cloneURL, test.revision, test.file)
-		if test.wantFilePath != filePath {
+		if test.wantFilePath != filePath.String() {
 			t.Errorf("%s %s: want filePath %s, got %s", test.cloneURL, test.file, test.wantFilePath, filePath)
 		}
 	}

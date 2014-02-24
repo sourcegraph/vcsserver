@@ -1,7 +1,6 @@
 package vcsserver
 
 import (
-	"github.com/sourcegraph/go-vcs"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +10,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/sourcegraph/go-vcs"
 )
 
 func TestConcurrentUpdate(t *testing.T) {
@@ -39,7 +40,7 @@ func testConcurrentUpdate(t *testing.T, cloneURL string) {
 	defer os.RemoveAll(tmpdir)
 
 	var cloneToTemp = func(subdir string) error {
-		_, err = vcs.Clone(s.URL+clonePath, filepath.Join(tmpdir, subdir))
+		_, err = vcs.Clone(s.URL+clonePath.String(), filepath.Join(tmpdir, subdir))
 		return err
 	}
 

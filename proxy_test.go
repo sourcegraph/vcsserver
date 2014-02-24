@@ -1,7 +1,6 @@
 package vcsserver
 
 import (
-	"github.com/sourcegraph/go-vcs"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +9,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+
+	"github.com/sourcegraph/go-vcs"
 )
 
 type proxyTestGroup struct {
@@ -91,7 +92,7 @@ func testProxy(t *testing.T, test proxyTest, serverURL string) {
 	clonePath := ClonePath(test.vcs.ShortName(), cloneURL)
 
 	localRepoDir := filepath.Join(tmpdir, "repo")
-	_, err = test.vcs.Clone(serverURL+clonePath, localRepoDir)
+	_, err = test.vcs.Clone(serverURL+clonePath.String(), localRepoDir)
 	if err != nil {
 		t.Fatal("Clone failed:", err)
 	}
